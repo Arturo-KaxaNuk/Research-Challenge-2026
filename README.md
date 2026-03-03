@@ -8,6 +8,8 @@ S01 KN Hack Kick-Off & Intro to Investment Research: https://www.youtube.com/wat
 
 S02 Data Curation & Feature Engineering: https://www.youtube.com/watch?v=vydafB8UM9g
 
+LSEG Workspace + KN Data Curator: https://youtu.be/6Au0RWgojpE
+
 # Event Details
 
 By registering individually, you will receive all event information and payment instructions directly to your email.

@@ -51,4 +51,4 @@ Questions: research@kaxanuk.mx
 
 KN Hack: https://www.kaxanuk.mx/kn-hack
 
-<img width="1920" height="3264" alt="KaxaNuk Hack" src="https://github.com/user-attachments/assets/6e417480-63c1-4c37-95f4-0eb828470b8e" />
+<img width="1920" height="3264" alt="KaxaNuk Hack" src="https://github.com/user-attachments/assets/1dce5cde-5c14-45c5-8753-bf0e6c2d5c06" />

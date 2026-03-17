@@ -54,9 +54,9 @@ from pathlib import Path
 # ==============================================================================
 # PATHS
 # ==============================================================================
-DATA_DIR = Path(r"D:\KN Hack\Research-Challenge-2026\Investment_Strategy\Data_Curator")
-CONFIG_DIR = Path(r"D:\KN Hack\Research-Challenge-2026\Investment_Strategy\Config")
-OUTPUT_DIR = Path(r"D:\KN Hack\Research-Challenge-2026\Investment_Strategy\Portfolio_Construction")
+DATA_DIR = Path(r"Data_Curator")
+CONFIG_DIR = Path(r"Config")
+OUTPUT_DIR = Path(r"Portfolio_Construction")
 
 # ==============================================================================
 # STRATEGY PARAMETERS

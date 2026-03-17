@@ -2,45 +2,49 @@
 Liquidity-Weighted Trend Strategy — Portfolio Construction
 ==========================================================
 
-RULES (from S03 Portfolio Construction & Strategy Modeling):
--------------------------------------------------------------
-Selection:
-    - Securities with c_sma_50d_200d_signal = 1 are eligible
-    - Rank eligible securities by c_daily_traded_value_63d (descending)
-    - Select top 35 securities
+Rules (from S03 Portfolio Construction & Strategy Modeling)
+-----------------------------------------------------------
 
-Sizing:
-    - Weights proportional to traded value among selected securities
-    - Maximum 20% weight per position
-    - Excess weight redistributed proportionally
+**Selection:**
+    - Securities with ``c_sma_50d_200d_signal == 1`` are eligible.
+    - Rank eligible securities by ``c_daily_traded_value_63d`` (descending).
+    - Select the top 35 securities.
 
-Market Regime Handling:
-    - If fewer than MIN_ELIGIBLE_STOCKS (default 35) stocks are eligible:
-        * Invest 100% in SPY ETF
-    - Exit SPY regime when eligible stocks >= REENTRY_THRESHOLD (configurable)
-      to avoid excessive rebalancing
+**Sizing:**
+    - Weights are proportional to traded value among selected securities.
+    - Maximum 20 % weight per position.
+    - Excess weight is redistributed proportionally.
 
-Delisting / Untradable Handling:
-    - For each ticker, check raw close (m_close) and volume (m_volume)
+**Market Regime Handling:**
+    - If fewer than ``MIN_ELIGIBLE_STOCKS`` (default 35) stocks are eligible,
+      invest 100 % in SPY ETF.
+    - Exit the SPY regime when eligible stocks >= ``REENTRY_THRESHOLD``
+      (configurable) to avoid excessive rebalancing.
+
+**Delisting / Untradable Handling:**
+    - For each ticker, check raw close (``m_close_split_adjusted``) and
+      volume (``m_volume_split_adjusted``).
     - A ticker is flagged as untradable when:
-        * It has no valid adjusted close on a given date, OR
-        * In a trailing window of DELIST_LOOKBACK_DAYS, the fraction of days
-          with missing raw close or zero volume >= DELIST_MISSING_THRESHOLD
+        * It has no valid adjusted close
+          (``m_close_dividend_and_split_adjusted``) on a given date, **or**
+        * In a trailing window of ``DELIST_LOOKBACK_DAYS``, the fraction of
+          days with missing raw close or zero volume >=
+          ``DELIST_MISSING_THRESHOLD``.
     - The forced rebalance to sell the ticker fires on T-1 (the last
-      healthy day before problems start)
-    - From the exclude date onward, the ticker is permanently ineligible
+      healthy day before problems start).
+    - From the exclude date onward the ticker is permanently ineligible.
 
-Rebalancing:
-    - Event-driven: rebalance when:
-        * A security enters the top-35
-        * A security exits the top-35
-        * Transition into/out of SPY-only regime
-        * A held constituent becomes untradable (rebalance on T-1)
+**Rebalancing (event-driven):**
+    Rebalance when any of the following occurs:
+        * A security enters the top-35.
+        * A security exits the top-35.
+        * Transition into / out of SPY-only regime.
+        * A held constituent becomes untradable (rebalance on T-1).
 
-Output:
-    - Rows = tickers (alphabetical)
-    - Columns = rebalance dates only
-    - Values = portfolio weights (rounded to 9 decimals)
+**Output:**
+    - Rows = tickers (alphabetical).
+    - Columns = rebalance dates only.
+    - Values = portfolio weights (rounded to 9 decimals).
 """
 
 import pandas as pd
@@ -277,22 +281,38 @@ def detect_untradable_tickers(close_adj_df, close_raw_df, volume_df, trading_dat
     """
     Detect tickers that become untradable during the backtest.
 
-    A ticker is flagged as untradable on date D if ANY of:
-      1. It has no valid adjusted close on date D
-      2. In the trailing DELIST_LOOKBACK_DAYS window, the fraction of days
-         with missing raw close OR zero volume >= DELIST_MISSING_THRESHOLD
+    Health is assessed using three price/volume columns:
 
-    Once flagged, we compute:
-      - exclude_date  = first unhealthy date (ticker excluded from this day on)
-      - remove_date   = one trading day before exclude_date (forced rebalance
-                        to sell the ticker while it still has a valid price)
+    - **Adjusted close** (``m_close_dividend_and_split_adjusted``): a ticker
+      with no valid value on date D is immediately flagged.
+    - **Raw close** (``m_close_split_adjusted``) and **volume**
+      (``m_volume_split_adjusted``): used for trailing-window health.  In the
+      last ``DELIST_LOOKBACK_DAYS`` trading days, if the fraction of days with
+      missing raw close or zero volume >= ``DELIST_MISSING_THRESHOLD``, the
+      ticker is flagged.
+
+    Once flagged the function computes:
+    - ``exclude_date`` — first unhealthy date (ticker excluded from this day on).
+    - ``remove_date``  — one trading day before ``exclude_date`` (forced
+      rebalance to sell while a valid price still exists).
+
+    Parameters
+    ----------
+    close_adj_df : pd.DataFrame
+        Date x ticker matrix of dividend-and-split-adjusted close prices.
+    close_raw_df : pd.DataFrame
+        Date x ticker matrix of split-adjusted (raw) close prices.
+    volume_df : pd.DataFrame
+        Date x ticker matrix of split-adjusted volume.
+    trading_dates : pd.DatetimeIndex
+        Dates within the backtest window.
 
     Returns
     -------
-    ticker_exclude_from : dict
-        {ticker: first_date_to_EXCLUDE}
-    force_remove_on : dict
-        {date: set_of_tickers}  — forced rebalance dates
+    ticker_exclude_from : dict[str, pd.Timestamp]
+        ``{ticker: first_date_to_EXCLUDE}``
+    force_remove_on : dict[pd.Timestamp, set[str]]
+        ``{date: set_of_tickers}`` — forced rebalance dates.
     """
     # Restrict to backtest trading dates
     raw_arr = close_raw_df.reindex(index=trading_dates).values

@@ -38,7 +38,7 @@ from kaxanuk.data_curator.features import helpers
 # Moving Average Calculations
 # =============================================================================
 
-def c_50_sma(m_close_dividend_and_split_adjusted):
+def c_sma_50d(m_close_dividend_and_split_adjusted):
     """
     50-day Simple Moving Average of adjusted close price.
 
@@ -58,7 +58,7 @@ def c_50_sma(m_close_dividend_and_split_adjusted):
     )
 
 
-def c_200_sma(m_close_dividend_and_split_adjusted):
+def c_sma_200d(m_close_dividend_and_split_adjusted):
     """
     200-day Simple Moving Average of adjusted close price.
 
@@ -82,7 +82,7 @@ def c_200_sma(m_close_dividend_and_split_adjusted):
 # Signal Generation
 # =============================================================================
 
-def c_sma_signal(c_50_sma, c_200_sma):
+def c_sma_50d_200d_signal(c_sma_50d, c_sma_200d):
     """
     Generate trend signal based on SMA crossover.
 
@@ -109,8 +109,8 @@ def c_sma_signal(c_50_sma, c_200_sma):
     The signal is only generated when both SMAs have valid values.
     This ensures no false signals during the 200-day warmup period.
     """
-    sma_50 = c_50_sma.to_pandas()
-    sma_200 = c_200_sma.to_pandas()
+    sma_50 = c_sma_50d.to_pandas()
+    sma_200 = c_sma_200d.to_pandas()
 
     # Initialize signal as NaN (no signal during warmup)
     signal = pd.Series(np.nan, index=sma_50.index)

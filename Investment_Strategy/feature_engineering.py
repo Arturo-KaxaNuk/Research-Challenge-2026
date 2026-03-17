@@ -20,8 +20,8 @@ import pathlib
 
 # For Pycharm to properly resolve the namespaced module references, you need to right click
 # on the following directories and mark them as follows:
-#   src : Mark Directory As > Sources Root
-#   src/kaxanuk : Mark Directory As > Namespace Package
+#   Custom_Features : Mark Directory As > Sources Root
+#   Custom_Features/kaxanuk : Mark Directory As > Namespace Package
 import kaxanuk.data_curator
 
 
@@ -35,20 +35,22 @@ if os.environ.get('KNDC_DEBUG_PORT') is not None:
     )
 
 # Load user's custom calculations module, if exists in Config dir
-if ( pathlib.Path('src/alpha_signals/simple_moving_average_alpha_signal.py').is_file()
-    and pathlib.Path('src/outlier_adjusted_data/shares_outstanding_outlier_adjusted.py').is_file()
+if ( pathlib.Path('Custom_Features/alpha_signals/simple_moving_average_alpha_signal.py').is_file()
+    and pathlib.Path('Custom_Features/outlier_adjusted_data/shares_outstanding_outlier_adjusted.py').is_file()
 ):
     # noinspection PyUnresolvedReferences
-    from src.alpha_signals import simple_moving_average_alpha_signal
-    from src.outlier_adjusted_data import shares_outstanding_outlier_adjusted
+    from Custom_Features.alpha_signals import simple_moving_average_alpha_signal
+    from Custom_Features.outlier_adjusted_data import shares_outstanding_outlier_adjusted
+    from Custom_Features.market import missing_market_data
 
     custom_calculation_modules = [simple_moving_average_alpha_signal,
                                   shares_outstanding_outlier_adjusted,
+                                  missing_market_data,
                                   ]
 else:
     custom_calculation_modules = []
 
-output_base_dir = 'Output'
+output_base_dir = 'Data_Curator'
 
 # Load the configuration from the file
 configurator = kaxanuk.data_curator.config_handlers.ExcelConfigurator(

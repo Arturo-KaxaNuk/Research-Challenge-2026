@@ -10,6 +10,8 @@ S02 Data Curation & Feature Engineering: https://www.youtube.com/watch?v=vydafB8
 
 LSEG Workspace + KN Data Curator: https://youtu.be/6Au0RWgojpE
 
+S03 Portfolio Construction & Strategy Modeling: https://youtu.be/S5bPxSiq4II
+
 # Event Details
 
 By registering individually, you will receive all event information and payment instructions directly to your email.

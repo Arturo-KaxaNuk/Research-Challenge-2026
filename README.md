@@ -52,3 +52,5 @@ Participants will automatically receive calendar invites and study materials.
 Questions: research@kaxanuk.mx 
 
 KN Hack: https://www.kaxanuk.mx/kn-hack
+
+![img.png](img.png)

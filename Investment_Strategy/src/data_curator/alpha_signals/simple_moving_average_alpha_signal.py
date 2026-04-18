@@ -28,8 +28,8 @@ This approach avoids false signals during the warmup period by returning
 NaN until both moving averages have enough data points.
 """
 
-import numpy as np
-import pandas as pd
+import numpy
+import pandas
 from kaxanuk.data_curator.modules.data_column import DataColumn
 from kaxanuk.data_curator.features import helpers
 
@@ -38,7 +38,7 @@ from kaxanuk.data_curator.features import helpers
 # Moving Average Calculations
 # =============================================================================
 
-def c_sma_50d(m_close_dividend_and_split_adjusted):
+def c_sma_50d(m_close_dividend_and_split_adjusted: DataColumn) -> DataColumn:
     """
     50-day Simple Moving Average of adjusted close price.
 
@@ -58,7 +58,7 @@ def c_sma_50d(m_close_dividend_and_split_adjusted):
     )
 
 
-def c_sma_200d(m_close_dividend_and_split_adjusted):
+def c_sma_200d(m_close_dividend_and_split_adjusted: DataColumn) -> DataColumn:
     """
     200-day Simple Moving Average of adjusted close price.
 
@@ -82,7 +82,7 @@ def c_sma_200d(m_close_dividend_and_split_adjusted):
 # Signal Generation
 # =============================================================================
 
-def c_sma_50d_200d_signal(c_sma_50d, c_sma_200d):
+def c_sma_50d_200d_signal(c_sma_50d: DataColumn, c_sma_200d: DataColumn) -> DataColumn:
     """
     Generate trend signal based on SMA crossover.
 
@@ -91,9 +91,9 @@ def c_sma_50d_200d_signal(c_sma_50d, c_sma_200d):
 
     Parameters
     ----------
-    c_50_sma : DataColumn
+    c_sma_50d : DataColumn
         50-day Simple Moving Average values.
-    c_200_sma : DataColumn
+    c_sma_200d : DataColumn
         200-day Simple Moving Average values.
 
     Returns
@@ -113,7 +113,7 @@ def c_sma_50d_200d_signal(c_sma_50d, c_sma_200d):
     sma_200 = c_sma_200d.to_pandas()
 
     # Initialize signal as NaN (no signal during warmup)
-    signal = pd.Series(np.nan, index=sma_50.index)
+    signal = pandas.Series(numpy.nan, index=sma_50.index)
 
     # Only generate signal where both SMAs are valid
     valid_mask = sma_50.notna() & sma_200.notna()

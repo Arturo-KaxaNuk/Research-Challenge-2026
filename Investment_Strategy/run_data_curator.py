@@ -10,38 +10,26 @@ KNDC_API_KEY_FMP : str
     Api key for the Financial Modeling Prep data provider
 KNDC_API_KEY_LSEG : str
     Api key for the LSEG Workspace data provider
-KNDC_DEBUG_PORT : int
-    The Pycharm remote debugger port. Only needed for development.
 """
-
 
 import os
 import pathlib
 
-# For Pycharm to properly resolve the namespaced module references, you need to right click
-# on the following directories and mark them as follows:
-#   Custom_Features : Mark Directory As > Sources Root
-#   Custom_Features/kaxanuk : Mark Directory As > Namespace Package
 import kaxanuk.data_curator
 
 
 # Load the user's environment variables from Config/.env, including data provider API keys
 kaxanuk.data_curator.load_config_env()
 
-# Initialize Pycharm debug if we're on dev environment
-if os.environ.get('KNDC_DEBUG_PORT') is not None:
-    kaxanuk.data_curator.debugger.init(
-        int(os.environ.get('KNDC_DEBUG_PORT'))
-    )
-
 # Load user's custom calculations module, if exists in Config dir
-if ( pathlib.Path('Custom_Features/alpha_signals/simple_moving_average_alpha_signal.py').is_file()
-    and pathlib.Path('Custom_Features/outlier_adjusted_data/shares_outstanding_outlier_adjusted.py').is_file()
+if (pathlib.Path('src/data_curator/alpha_signals/simple_moving_average_alpha_signal.py').is_file()
+    and pathlib.Path('src/data_curator/outlier_adjusted_data/shares_outstanding_outlier_adjusted.py').is_file()
+    and pathlib.Path('src/data_curator/market/missing_market_data.py').is_file()
 ):
     # noinspection PyUnresolvedReferences
-    from Custom_Features.alpha_signals import simple_moving_average_alpha_signal
-    from Custom_Features.outlier_adjusted_data import shares_outstanding_outlier_adjusted
-    from Custom_Features.market import missing_market_data
+    from data_curator.alpha_signals import simple_moving_average_alpha_signal
+    from data_curator.outlier_adjusted_data import shares_outstanding_outlier_adjusted
+    from data_curator.market import missing_market_data
 
     custom_calculation_modules = [simple_moving_average_alpha_signal,
                                   shares_outstanding_outlier_adjusted,
@@ -53,8 +41,9 @@ else:
 output_base_dir = 'Data_Curator'
 
 # Load the configuration from the file
+parameters_excel_file = 'Config/data_curator_parameters.xlsx'
 configurator = kaxanuk.data_curator.config_handlers.ExcelConfigurator(
-    file_path='Config/parameters_datacurator.xlsx',
+    file_path=parameters_excel_file,
     data_providers={
         'financial_modeling_prep': {
             'class': kaxanuk.data_curator.data_providers.FinancialModelingPrep,

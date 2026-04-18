@@ -61,7 +61,7 @@ OUTPUT_DIR = Path(r"Portfolio_Construction")
 # ==============================================================================
 # STRATEGY PARAMETERS
 # ==============================================================================
-MAX_POSITIONS = 35
+MAX_POSITIONS = 10
 MAX_WEIGHT = 0.20
 SPY_TICKER = "SPY"
 
@@ -77,7 +77,7 @@ COL_CLOSE_RAW = "m_close_split_adjusted"
 COL_VOLUME = "m_volume_split_adjusted"
 
 # Delisting / untradable detection parameters
-DELIST_LOOKBACK_DAYS = 10       # trailing window size (trading days)
+DELIST_LOOKBACK_DAYS = 21       # trailing window size (trading days)
 DELIST_MISSING_THRESHOLD = 0.3  # if >= 30 % of days missing → untradable
 
 PORTFOLIO_START = pd.Timestamp("2015-01-01")

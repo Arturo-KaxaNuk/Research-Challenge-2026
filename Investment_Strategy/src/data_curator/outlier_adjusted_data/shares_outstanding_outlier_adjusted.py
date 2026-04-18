@@ -57,8 +57,8 @@ ROLLING_DEVIATION_THRESHOLD : float
     Maximum allowed deviation from rolling median (40%).
 """
 
-import numpy as np
-import pandas as pd
+import numpy
+import pandas
 from kaxanuk.data_curator.modules.data_column import DataColumn
 
 
@@ -75,7 +75,7 @@ ROLLING_DEVIATION_THRESHOLD = 0.40
 # Percentage Change Calculation
 # =============================================================================
 
-def calculate_pct_change(series: pd.Series) -> pd.Series:
+def calculate_pct_change(series: pandas.Series) -> pandas.Series:
     """
     Calculate absolute period-to-period percentage change.
 
@@ -98,7 +98,7 @@ def calculate_pct_change(series: pd.Series) -> pd.Series:
 # Spike Detection
 # =============================================================================
 
-def find_spike_start_indices(pct_change: pd.Series, threshold: float) -> pd.Index:
+def find_spike_start_indices(pct_change: pandas.Series, threshold: float) -> pandas.Index:
     """
     Identify indices where percentage change exceeds threshold.
 
@@ -119,7 +119,7 @@ def find_spike_start_indices(pct_change: pd.Series, threshold: float) -> pd.Inde
 
 
 def find_reversion_index(
-    series: pd.Series,
+    series: pandas.Series,
     spike_start_position: int,
     pre_spike_value: float,
     threshold: float,
@@ -146,7 +146,7 @@ def find_reversion_index(
     int or None
         Index label of reversion point, or None if no reversion found.
     """
-    if pd.isna(pre_spike_value) or pre_spike_value == 0:
+    if pandas.isna(pre_spike_value) or pre_spike_value == 0:
         return None
 
     search_end = min(spike_start_position + max_lookahead, len(series))
@@ -162,10 +162,10 @@ def find_reversion_index(
 
 
 def mark_spike_region(
-    outlier_mask: pd.Series,
+    outlier_mask: pandas.Series,
     spike_start_label: int,
     reversion_label: int,
-) -> pd.Series:
+) -> pandas.Series:
     """
     Mark all points in spike region as outliers.
 
@@ -190,10 +190,10 @@ def mark_spike_region(
 
 
 def detect_reverting_spikes(
-    series: pd.Series,
+    series: pandas.Series,
     threshold: float,
     max_lookahead: int = MAX_LOOKAHEAD_DAYS,
-) -> pd.Series:
+) -> pandas.Series:
     """
     Detect spike regions that revert to pre-spike levels.
 
@@ -216,7 +216,7 @@ def detect_reverting_spikes(
     pd.Series
         Boolean mask where True indicates an outlier position.
     """
-    outlier_mask = pd.Series(False, index=series.index)
+    outlier_mask = pandas.Series(False, index=series.index)
     pct_change = calculate_pct_change(series)
     spike_starts = find_spike_start_indices(pct_change, threshold)
 
@@ -228,7 +228,7 @@ def detect_reverting_spikes(
         if spike_pos <= processed_until:
             continue
 
-        pre_spike_value = series.iloc[spike_pos - 1] if spike_pos > 0 else np.nan
+        pre_spike_value = series.iloc[spike_pos - 1] if spike_pos > 0 else numpy.nan
 
         reversion_label = find_reversion_index(
             series=series,
@@ -249,7 +249,7 @@ def detect_reverting_spikes(
 # Rolling Median Outlier Detection
 # =============================================================================
 
-def detect_rolling_median_outliers(series: pd.Series) -> pd.Series:
+def detect_rolling_median_outliers(series: pandas.Series) -> pandas.Series:
     """
     Detect outliers by comparison to centered rolling median.
 
@@ -283,9 +283,9 @@ def detect_rolling_median_outliers(series: pd.Series) -> pd.Series:
 # =============================================================================
 
 def apply_forward_fill_correction(
-    series: pd.Series,
-    outlier_mask: pd.Series,
-) -> pd.Series:
+    series: pandas.Series,
+    outlier_mask: pandas.Series,
+) -> pandas.Series:
     """
     Replace outlier values with forward-filled valid values.
 
@@ -302,7 +302,7 @@ def apply_forward_fill_correction(
         Corrected series with outliers replaced by last valid value.
     """
     corrected = series.copy()
-    corrected[outlier_mask] = np.nan
+    corrected[outlier_mask] = numpy.nan
     return corrected.ffill()
 
 
@@ -310,7 +310,7 @@ def apply_forward_fill_correction(
 # Main Correction Pipeline
 # =============================================================================
 
-def correct_shares_outstanding_outliers(series: pd.Series) -> pd.Series:
+def correct_shares_outstanding_outliers(series: pandas.Series) -> pandas.Series:
     """
     Apply multi-pass outlier correction pipeline.
 
@@ -353,8 +353,8 @@ def correct_shares_outstanding_outliers(series: pd.Series) -> pd.Series:
 # =============================================================================
 
 def c_weighted_average_basic_shares_outstanding_outlier_adjusted(
-    fis_weighted_average_basic_shares_outstanding,
-):
+    fis_weighted_average_basic_shares_outstanding: DataColumn,
+) -> DataColumn:
     """
     Outlier-adjusted weighted average basic shares outstanding.
 
@@ -378,8 +378,8 @@ def c_weighted_average_basic_shares_outstanding_outlier_adjusted(
 
 
 def c_weighted_average_diluted_shares_outstanding_outlier_adjusted(
-    fis_weighted_average_diluted_shares_outstanding,
-):
+    fis_weighted_average_diluted_shares_outstanding: DataColumn,
+) -> DataColumn:
     """
     Outlier-adjusted weighted average diluted shares outstanding.
 
@@ -400,3 +400,43 @@ def c_weighted_average_diluted_shares_outstanding_outlier_adjusted(
     series = fis_weighted_average_diluted_shares_outstanding.to_pandas()
     corrected = correct_shares_outstanding_outliers(series)
     return DataColumn.load(corrected)
+
+def c_market_cap_outlier_adjusted(
+    m_close_split_adjusted,
+    c_weighted_average_diluted_shares_outstanding_outlier_adjusted
+):
+    r"""
+    Calculate the market capitalization using unadjusted close prices and weighted average diluted shares outstanding.
+
+    .. category:: Market and Fundamental
+
+    Parameters
+    ----------
+    m_close_split_adjusted : DataColumn
+        The adjusted closing prices.
+    fis_weighted_average_diluted_shares_outstanding : DataColumn
+        The weighted average of the diluted shares outstanding.
+
+    Returns
+    -------
+    DataColumn
+        The market capitalization.
+
+    Notes
+    -----
+    Market cap is calculated as:
+
+    .. math::
+
+        \mathrm{Market\ Cap} = \mathrm{Close} \times \mathrm{Weighted\ Average\ Diluted\ Shares\ Outstanding}
+
+    In Excel, assuming close in column A and shares in column B:
+
+    1. In cell C2, enter::
+
+           =A2 * B2
+
+    2. Drag the formula down to apply to subsequent rows.
+    """
+    output = m_close_split_adjusted * c_weighted_average_diluted_shares_outstanding_outlier_adjusted
+    return output

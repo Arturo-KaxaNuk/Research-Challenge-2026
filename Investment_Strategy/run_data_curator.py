@@ -23,17 +23,17 @@ kaxanuk.data_curator.load_config_env()
 
 # Load user's custom calculations module, if exists in Config dir
 if (pathlib.Path('src/data_curator/alpha_signals/simple_moving_average_alpha_signal.py').is_file()
-    and pathlib.Path('src/data_curator/outlier_adjusted_data/shares_outstanding_outlier_adjusted.py').is_file()
     and pathlib.Path('src/data_curator/market/missing_market_data.py').is_file()
+    and pathlib.Path('src/data_curator/outlier_adjusted_data/shares_outstanding_outlier_adjusted.py').is_file()
 ):
     # noinspection PyUnresolvedReferences
     from data_curator.alpha_signals import simple_moving_average_alpha_signal
-    from data_curator.outlier_adjusted_data import shares_outstanding_outlier_adjusted
     from data_curator.market import missing_market_data
+    from data_curator.outlier_adjusted_data import shares_outstanding_outlier_adjusted
 
     custom_calculation_modules = [simple_moving_average_alpha_signal,
-                                  shares_outstanding_outlier_adjusted,
                                   missing_market_data,
+                                  shares_outstanding_outlier_adjusted,
                                   ]
 else:
     custom_calculation_modules = []

@@ -45,13 +45,6 @@ pip install kaxanuk.data_curator kaxanuk.data_curator_extensions.yahoo_finance
 pip install kaxanuk-backtest-engine --extra-index-url https://license:LIC-XXXX
 ```
 
-Or install via the provided `pyproject.toml` inside `Investment_Strategy_Example/`:
-
-```bash
-cd Investment_Strategy_Example
-pip install .
-```
-
 Copy the environment template and fill in your API keys:
 
 ```bash

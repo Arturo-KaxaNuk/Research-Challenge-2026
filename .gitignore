@@ -169,4 +169,15 @@ cython_debug/
 *.csv
 !Investment_Strategy_Example/Benchmark_Portfolios/benchmark_portfolio_holdings.csv
 *.idea
-Backtest_Engine/*
+*.parquet
+
+# Investment Strategy Example — generated output directories
+Investment_Strategy_Example/Backtest_Engine/*
+!Investment_Strategy_Example/Backtest_Engine/.gitkeep
+Investment_Strategy_Example/Data_Curator/*
+!Investment_Strategy_Example/Data_Curator/.gitkeep
+Investment_Strategy_Example/Portfolio_Construction/*
+!Investment_Strategy_Example/Portfolio_Construction/.gitkeep
+
+# Environment / secrets
+Investment_Strategy_Example/Config/.env

@@ -2,6 +2,61 @@
 
 The KN Hack 2026 is a team-based investment strategy challenge (teams of 2 to 4 members) open to students, investors, and anyone eager to learn, compete, and build real-world research skills.
 
+# Investment Strategy Example
+
+The `Investment_Strategy_Example/` folder contains a full, runnable stock-picking strategy built on the KaxaNuk framework. It is organized as three sequential steps:
+
+## Step 1 — Data Curator (`run_data_curator.py`)
+
+Downloads market and fundamental data from your configured data providers (Financial Modeling Prep, LSEG Workspace, or Yahoo Finance), runs custom signal calculations (e.g. the 50/200-day SMA crossover signal), and writes enriched per-ticker datasets to `Data_Curator/` as CSV and Parquet files.
+
+Configuration lives in `Config/data_curator_parameters.xlsx`. API keys go in `Config/.env` (copy from `Config/.env_template`).
+
+```bash
+cd Investment_Strategy_Example
+python run_data_curator.py
+```
+
+## Step 2 — Portfolio Construction (`run_portfolio_construction.py`)
+
+Reads the enriched data from `Data_Curator/`, applies selection and sizing rules (liquidity-weighted, signal-filtered, capped at 20% per position), and produces a historical portfolio weights file at `Portfolio_Construction/portfolio_weights.csv`. This lets you validate and inspect the strategy hypothesis before running the full backtest.
+
+```bash
+python run_portfolio_construction.py
+```
+
+## Step 3 — Backtest Engine (`run_backtest_engine.py`)
+
+Uses the KaxaNuk Backtest Engine library to run a historical simulation over the portfolio weights produced in Step 2. Configuration lives in `Config/backtest_engine_parameters.xlsx`. Results and a performance dashboard are written to `Backtest_Engine/`.
+
+```bash
+python run_backtest_engine.py
+```
+
+## Setup
+
+Install dependencies (Python >=3.12, <3.15 required):
+
+```bash
+pip install kaxanuk-data-curator kaxanuk-data-curator-yahoo-finance kaxanuk-backtest-engine
+```
+
+Or install via the provided `pyproject.toml` inside `Investment_Strategy_Example/`:
+
+```bash
+cd Investment_Strategy_Example
+pip install .
+```
+
+Copy the environment template and fill in your API keys:
+
+```bash
+cp Config/.env_template Config/.env
+# then edit Config/.env with your keys
+```
+
+---
+
 # Sessions Videos
 
 S01 KN Hack Kick-Off & Intro to Investment Research: https://www.youtube.com/watch?v=_jBLqYBaP-I

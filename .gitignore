@@ -178,6 +178,3 @@ Investment_Strategy_Example/Data_Curator/*
 !Investment_Strategy_Example/Data_Curator/.gitkeep
 Investment_Strategy_Example/Portfolio_Construction/*
 !Investment_Strategy_Example/Portfolio_Construction/.gitkeep
-
-# Environment / secrets
-Investment_Strategy_Example/Config/.env

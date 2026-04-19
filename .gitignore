@@ -166,7 +166,7 @@ cython_debug/
 .debug/
 
 # Customizations
-!Investment_Strategy_Example/Config/.env_template
 *.csv
 !Investment_Strategy_Example/Benchmark_Portfolios/benchmark_portfolio_holdings.csv
+Investment_Strategy_Example/Backtest_Engine/*.xlsx
 *.idea

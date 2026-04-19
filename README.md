@@ -38,7 +38,11 @@ python run_backtest_engine.py
 Install dependencies (Python >=3.12, <3.15 required):
 
 ```bash
-pip install kaxanuk-data-curator kaxanuk-data-curator-yahoo-finance kaxanuk-backtest-engine
+pip install kaxanuk.data_curator kaxanuk.data_curator_extensions.yahoo_finance
+```
+
+```bash
+pip install kaxanuk-backtest-engine --extra-index-url https://license:LIC-XXXX
 ```
 
 Or install via the provided `pyproject.toml` inside `Investment_Strategy_Example/`:

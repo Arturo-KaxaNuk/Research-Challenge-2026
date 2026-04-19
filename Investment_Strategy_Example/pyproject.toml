@@ -7,9 +7,9 @@ name = "investment-strategy-example"
 version = "0.1.0"
 requires-python = ">=3.12,<3.15"
 dependencies = [
-    "kaxanuk-data-curator",
-    "kaxanuk-data-curator-yahoo-finance",
-    "kaxanuk-backtest-engine",
+    "kaxanuk.data_curator",
+    "kaxanuk.data_curator_extensions.yahoo_finance",
+    "kaxanuk-backtest-engine --extra-index-url https://license:LIC-XXXX",
     "numpy",
     "pandas",
     "openpyxl",

@@ -60,12 +60,12 @@ configurator = kaxanuk.data_curator.config_handlers.ExcelConfigurator(
         },
     },
     output_handlers={
-       'csv': kaxanuk.data_curator.output_handlers.CsvOutput(
+        'csv': kaxanuk.data_curator.output_handlers.CsvOutput(
             output_base_dir=output_base_dir,
-       ),
+        ),
         'parquet': kaxanuk.data_curator.output_handlers.ParquetOutput(
             output_base_dir=output_base_dir,
-       ),
+        ),
     },
 )
 

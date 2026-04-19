@@ -54,7 +54,7 @@ portfolio_input_handlers = {
 market_data_input_handler = market_data_input_handlers[configuration.market_data_input_format]
 portfolio_input_handler = portfolio_input_handlers[configuration.portfolio_input_format]
 
-register = kaxanuk.backtest_engine.backtest_engine.main(
+kaxanuk.backtest_engine.backtest_engine.main(
     configuration=configuration,
     input_handlers=[market_data_input_handler],
     portfolio_handlers=[portfolio_input_handler],

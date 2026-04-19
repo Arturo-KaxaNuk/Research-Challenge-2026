@@ -68,17 +68,18 @@ import pandas
 DATA_DIR = pathlib.Path(r"Data_Curator")
 CONFIG_DIR = pathlib.Path(r"Config")
 OUTPUT_DIR = pathlib.Path(r"Portfolio_Construction")
+BENCHMARK_DIR = pathlib.Path(r"Benchmark_Portfolios")
 
 # ==============================================================================
 # STRATEGY PARAMETERS
 # ==============================================================================
-MAX_POSITIONS = 35
+MAX_POSITIONS = 20
 MAX_WEIGHT = 0.20
 MIN_DAILY_TRADED_VALUE = 10_000_000   # $10 M single-day floor for eligibility
 SPY_TICKER = "SPY"
 
-MIN_ELIGIBLE_STOCKS = 50   # Enter SPY regime below this threshold
-REENTRY_THRESHOLD = 60     # Exit SPY regime at or above this threshold
+MIN_ELIGIBLE_STOCKS = 20   # Enter SPY regime below this threshold
+REENTRY_THRESHOLD = 25     # Exit SPY regime at or above this threshold
 
 COL_DATE = "m_date"
 COL_TICKER = "Ticker"
@@ -93,7 +94,7 @@ COL_VOLUME = "m_volume_split_adjusted"
 DELIST_LOOKBACK_DAYS = 21       # trailing window size (trading days)
 DELIST_MISSING_THRESHOLD = 0.05  # fraction of missing days to flag as untradable
 
-PORTFOLIO_START = pandas.Timestamp("2007-01-01")
+PORTFOLIO_START = pandas.Timestamp("2015-01-01")
 PORTFOLIO_END = pandas.Timestamp("2026-04-17")
 
 
@@ -101,31 +102,48 @@ PORTFOLIO_END = pandas.Timestamp("2026-04-17")
 # 1. DATA LOADING
 # ==============================================================================
 def _read_config_tickers() -> list[str]:
-    """Read ticker universe from the config Excel file (all sheets)."""
+    """Read ticker universe from the Identifiers sheet, main_identifier column."""
     config_path = CONFIG_DIR / "data_curator_parameters.xlsx"
     if not config_path.exists():
         return []
     try:
-        excel_file = pandas.ExcelFile(config_path)
-        tickers: list[str] = []
-        seen: set[str] = set()
-        for sheet in excel_file.sheet_names:
-            frame = pandas.read_excel(config_path, sheet_name=sheet)
-            for col in frame.columns:
-                for val in frame[col].dropna().astype(str):
-                    tkr = val.strip().split()[0]
-                    if (
-                        tkr
-                        and tkr not in seen
-                        and not tkr.replace(".", "").replace("-", "").isdigit()
-                        and len(tkr) <= 10
-                    ):
-                        tickers.append(tkr)
-                        seen.add(tkr)
+        frame = pandas.read_excel(config_path, sheet_name="Identifiers")
+        tickers = (
+            frame["main_identifier"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .loc[lambda s: s != ""]
+            .tolist()
+        )
         print(f"  Config tickers: {len(tickers)}")
         return tickers
     except Exception:
         return []
+
+
+def load_benchmark_holdings() -> pandas.DataFrame | None:
+    """
+    Load benchmark_portfolio_holdings.csv and return a date × ticker boolean matrix.
+
+    Tickers with a non-zero value on a given date are considered part of the benchmark.
+    Returns None if the file does not exist (benchmark filter is then skipped).
+    """
+    csv_path = BENCHMARK_DIR / "benchmark_portfolio_holdings.csv"
+    if not csv_path.exists():
+        print(f"  Benchmark file not found: {csv_path} — benchmark filter disabled.")
+        return None
+    try:
+        df = pandas.read_csv(csv_path, index_col=0, low_memory=False)
+        df.index = pandas.to_datetime(df.index, format="mixed", dayfirst=False)
+        df.index.name = COL_DATE
+        df = df.sort_index()
+        print(f"  Benchmark: {df.shape[1]} tickers × {len(df):,} dates")
+        print(f"  Benchmark range: {df.index[0].date()} → {df.index[-1].date()}")
+        return df
+    except Exception as exc:
+        print(f"  WARNING: Could not load benchmark file: {exc} — benchmark filter disabled.")
+        return None
 
 
 def load_data() -> tuple[pandas.DataFrame, list[str], list[str]]:
@@ -282,6 +300,7 @@ def _select_eligible_stocks(
     close_row: numpy.ndarray,
     excluded: set[str],
     tickers: numpy.ndarray,
+    benchmark_tickers: set[str] | None = None,
 ) -> tuple[numpy.ndarray, numpy.ndarray, int]:
     """
     Apply selection filters and return the eligible universe for a single day.
@@ -295,6 +314,7 @@ def _select_eligible_stocks(
         3. 63-day average traded value is finite and positive (for ranking).
         4. Adjusted close is finite and positive (tradability guard).
         5. Not SPY and not in the excluded set.
+        6. If benchmark_tickers is provided, ticker must be in the benchmark (T-1).
 
     Parameters
     ----------
@@ -310,6 +330,9 @@ def _select_eligible_stocks(
         Tickers to unconditionally exclude (delisted or force-removed today).
     tickers
         Full ticker array corresponding to all matrix columns.
+    benchmark_tickers
+        Set of tickers that are part of the benchmark on T-1. If None, the
+        benchmark filter is disabled.
 
     Returns
     -------
@@ -327,6 +350,9 @@ def _select_eligible_stocks(
     if excluded:
         exclude_mask = numpy.isin(tickers, list(excluded))
         eligible_mask = eligible_mask & ~exclude_mask
+    if benchmark_tickers is not None:
+        benchmark_mask = numpy.isin(tickers, list(benchmark_tickers))
+        eligible_mask = eligible_mask & benchmark_mask
 
     eligible_tkrs = tickers[eligible_mask]
     eligible_tv_63d = tv_63d_row[eligible_mask]
@@ -615,6 +641,7 @@ def construct_portfolios(
     close_adj_df: pandas.DataFrame,
     close_raw_df: pandas.DataFrame,
     volume_df: pandas.DataFrame,
+    benchmark_df: pandas.DataFrame | None = None,
 ) -> dict[pandas.Timestamp, pandas.Series]:
     """
     Build event-driven portfolios over [PORTFOLIO_START, PORTFOLIO_END].
@@ -629,7 +656,7 @@ def construct_portfolios(
     Signal and traded-value rows are taken from T-1 (the previous row in the
     matrix), so every portfolio decision is based exclusively on data known
     before day T opens. The adjusted-close row is taken from T itself as a
-    same-day tradability guard.
+    same-day tradability guard. Benchmark membership is also read from T-1.
 
     Parameters
     ----------
@@ -645,6 +672,9 @@ def construct_portfolios(
         Date × ticker matrix of split-adjusted close prices.
     volume_df
         Date × ticker matrix of split-adjusted volume.
+    benchmark_df
+        Date × ticker matrix with non-zero values indicating benchmark membership.
+        When provided, only tickers in the benchmark on T-1 are eligible.
 
     Returns
     -------
@@ -661,6 +691,7 @@ def construct_portfolios(
     print(f"  Range:        {trading_dates[0].date()} → {trading_dates[-1].date()}")
     print(f"  SPY entry:    n_eligible < {MIN_ELIGIBLE_STOCKS}")
     print(f"  SPY exit:     n_eligible >= {REENTRY_THRESHOLD}")
+    print(f"  Benchmark filter: {'enabled' if benchmark_df is not None else 'disabled'}")
 
     ticker_exclude_from, force_remove_on = detect_untradable_tickers(
         close_adj_df, close_raw_df, volume_df, trading_dates
@@ -673,6 +704,14 @@ def construct_portfolios(
     close_arr = close_adj_df.values
     tickers = signal_df.columns.values
     date_idx = {trade_date: pos for pos, trade_date in enumerate(signal_df.index)}
+
+    # Pre-align benchmark to the signal matrix dates/tickers for fast row lookup.
+    benchmark_arr: numpy.ndarray | None = None
+    benchmark_date_idx: dict[pandas.Timestamp, int] | None = None
+    if benchmark_df is not None:
+        aligned_bm = benchmark_df.reindex(index=signal_df.index, columns=signal_df.columns).fillna(0)
+        benchmark_arr = aligned_bm.values.astype(float)
+        benchmark_date_idx = {bm_date: pos for pos, bm_date in enumerate(signal_df.index)}
 
     in_spy_regime = False
     prev_selected: frozenset | None = None
@@ -702,9 +741,16 @@ def construct_portfolios(
             if trade_date >= exc_date:
                 excluded.add(tkr)
 
+        # --- Benchmark: resolve T-1 benchmark membership set ---
+        benchmark_tickers: set[str] | None = None
+        if benchmark_arr is not None and benchmark_date_idx is not None:
+            bm_row = benchmark_arr[row_pos - 1]   # T-1 benchmark holdings
+            benchmark_tickers = set(tickers[bm_row != 0])
+
         # --- Selection: filter eligible universe and pick top-N ---
         eligible_tkrs, eligible_tv_63d, n_eligible = _select_eligible_stocks(
-            sig_row, tv_1d_row, tv_63d_row, close_row, excluded, tickers
+            sig_row, tv_1d_row, tv_63d_row, close_row, excluded, tickers,
+            benchmark_tickers=benchmark_tickers,
         )
         current_selected = _pick_top_n(eligible_tkrs, eligible_tv_63d)
 
@@ -891,12 +937,16 @@ validate_features(data)
 print("\n[3] Building matrices …")
 signal_df, tv_1d_df, tv_63d_df, close_adj_df, close_raw_df, volume_df = build_matrices(data)
 
-print("\n[4] Constructing portfolios …")
+print("\n[4] Loading benchmark holdings …")
+benchmark_df = load_benchmark_holdings()
+
+print("\n[5] Constructing portfolios …")
 portfolios = construct_portfolios(
-    signal_df, tv_1d_df, tv_63d_df, close_adj_df, close_raw_df, volume_df
+    signal_df, tv_1d_df, tv_63d_df, close_adj_df, close_raw_df, volume_df,
+    benchmark_df=benchmark_df,
 )
 
-print("\n[5] Building output …")
+print("\n[6] Building output …")
 output_df = build_output(portfolios)
 
 out_path = OUTPUT_DIR / "portfolio_weights.csv"

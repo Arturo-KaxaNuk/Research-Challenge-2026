@@ -169,5 +169,5 @@ cython_debug/
 *.csv
 !Investment_Strategy_Example/Benchmark_Portfolios/benchmark_portfolio_holdings.csv
 *.idea
-Investment_Strategy_Example/Backtest_Engine/*.xlsx
+Backtest_Engine/*
 
